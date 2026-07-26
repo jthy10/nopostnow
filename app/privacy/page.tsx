@@ -59,9 +59,9 @@ export default function PrivacyPage() {
         <p>
           The hosted service relies on providers including Firebase and Google Cloud
           for authentication, databases, file storage, and infrastructure; Vercel for
-          web delivery and server execution; and browser push services for notifications
-          you enable. These providers process data under their own terms and security
-          practices.
+          web delivery and server execution; Resend for transactional account
+          confirmation email; and browser push services for notifications you enable.
+          These providers process data under their own terms and security practices.
         </p>
         <p>
           Information may also be disclosed when reasonably necessary to comply with
