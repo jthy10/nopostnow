@@ -70,11 +70,15 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
    npm run dev
    ```
 
-## Member management
+## Account and administrator management
 
-There is no public registration form. Access is controlled with Firebase custom
-claims. Run these commands only from a trusted administrative environment with
-Firebase Admin credentials:
+Public users register with email and password in the app. They must verify their
+email before Firestore, Storage, the feed, or authenticated API routes will
+accept their session. Password reset and verification links are handled by the
+branded `/auth/action` route.
+
+The command below is only for bootstrapping an administrator from a trusted
+environment with Firebase Admin credentials:
 
 ```bash
 $env:USER_EMAIL="member@example.com"
@@ -84,9 +88,10 @@ npm run users -- create
 ```
 
 Set `$env:USER_ADMIN="true"` to create or grant an administrator. Existing
-accounts can be authorized with `npm run users -- grant` and disabled with
-`npm run users -- revoke`. Users must sign in again after a role change so their
-ID token includes the new claims.
+accounts can be enabled and assigned the requested role with
+`npm run users -- grant`, and disabled with `npm run users -- revoke`. Users
+must sign in again after an administrator role change so their ID token includes
+the new claim.
 
 ## Production configuration
 
@@ -108,7 +113,10 @@ daily prompt endpoint expects `Authorization: Bearer <CRON_SECRET>`.
 
 NoPostNow uses a defense-in-depth model:
 
-- Authentication verifies email and the `member` custom claim.
+- Authentication requires a verified email. Public signup never grants
+  administrator access.
+- Social profiles are UID-keyed and exclude email addresses; email-keyed account
+  records are readable only by their owner and administrators.
 - Firestore and Storage rules validate ownership, roles, shapes, sizes, and
   permitted paths.
 - Privileged API routes verify Firebase ID tokens with revocation checks.

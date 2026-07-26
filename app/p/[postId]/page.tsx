@@ -85,7 +85,7 @@ export default function PostPage({
           <div className="flex flex-col items-center gap-4 px-8 py-16 text-center">
             <p className="text-sm text-mut">This post is gone — it may have been deleted.</p>
             <Link
-              href="/"
+              href="/feed"
               className="rounded-lg border-[0.5px] border-edge px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-mut transition-colors hover:border-mut hover:text-white"
             >
               Back to feed
@@ -100,7 +100,7 @@ export default function PostPage({
             username={username || "Anonymous"}
             commentsVersion={commentBump}
             onOpenComments={setActiveComments}
-            onDeleted={() => router.replace("/")}
+            onDeleted={() => router.replace("/feed")}
           />
         )}
       </main>
@@ -126,7 +126,7 @@ export default function PostPage({
           onClose={() => setCapturedFile(null)}
           onPosted={() => {
             setCapturedFile(null);
-            router.push("/");
+            router.push("/feed");
           }}
         />
       )}

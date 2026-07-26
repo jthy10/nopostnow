@@ -44,7 +44,7 @@ export default function TopNav({
       >
         <div className="flex h-[52px] items-center justify-between px-5">
           <Link
-            href="/"
+            href="/feed"
             aria-label="Go to feed"
             onClick={() => {
               if (pathname !== "/") return;
