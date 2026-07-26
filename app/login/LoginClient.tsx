@@ -140,6 +140,37 @@ export default function LoginPage() {
     }
   }, [loading, router, user]);
 
+  useEffect(() => {
+    if (mode !== "verify" || !pendingUser) return;
+    const account = pendingUser;
+    let checking = false;
+
+    async function refreshPendingSession() {
+      if (checking || document.visibilityState === "hidden") return;
+      checking = true;
+      try {
+        await reload(account);
+        if (account.emailVerified) {
+          await account.getIdToken(true);
+          window.location.replace("/feed");
+        }
+      } catch {
+        // The manual check button remains available if a background refresh
+        // is interrupted or the browser is temporarily offline.
+      } finally {
+        checking = false;
+      }
+    }
+
+    const onVisibility = () => void refreshPendingSession();
+    window.addEventListener("focus", refreshPendingSession);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", refreshPendingSession);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [mode, pendingUser]);
+
   function switchMode(next: Mode) {
     setMode(next);
     setError(null);
