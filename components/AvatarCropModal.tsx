@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Port of the original site's avatar crop flow: drag to reposition,
 // slider to zoom, output a 400px square JPEG.
@@ -8,14 +8,15 @@ const VIEWPORT = 280;
 const OUTPUT = 400;
 
 export default function AvatarCropModal({
-  src,
+  blob,
   onCancel,
   onCropped,
 }: {
-  src: string;
+  blob: Blob;
   onCancel: () => void;
   onCropped: (blob: Blob) => void;
 }) {
+  const [src] = useState(() => URL.createObjectURL(blob));
   const imgRef = useRef<HTMLImageElement>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
@@ -23,6 +24,8 @@ export default function AvatarCropModal({
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
   const fitScale = natural ? Math.max(VIEWPORT / natural.w, VIEWPORT / natural.h) : 1;
+
+  useEffect(() => () => URL.revokeObjectURL(src), [src]);
 
   function clamp(p: { x: number; y: number }, s: number) {
     if (!natural) return p;

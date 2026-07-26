@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { getBlob, ref, uploadBytes } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { useAuthedImage } from "@/lib/use-authed-image";
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropBlob, setCropBlob] = useState<Blob | null>(null);
   const [myPosts, setMyPosts] = useState<Post[] | null>(null);
   const [visible, setVisible] = useState(PAGE);
   const [activeComments, setActiveComments] = useState<Post | null>(null);
@@ -65,7 +65,7 @@ export default function ProfilePage() {
   function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCropSrc(URL.createObjectURL(file));
+    setCropBlob(file);
     e.target.value = "";
   }
 
@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
   async function handleCropped(blob: Blob) {
     if (!user) return;
-    setCropSrc(null);
+    setCropBlob(null);
     setBusy(true);
     try {
       const path = `avatars/${user.uid}/${Date.now()}-avatar.jpg`;
@@ -89,11 +89,18 @@ export default function ProfilePage() {
     }
   }
 
-  function handleAvatarAction(action: string) {
+  async function handleAvatarAction(action: string) {
     setShowAvatarMenu(false);
     if (action === "Take Photo") cameraInputRef.current?.click();
     else if (action === "Photo Library") libraryInputRef.current?.click();
-    else if (action === "Edit Crop" && avatarSrc) setCropSrc(avatarSrc);
+    else if (action === "Edit Crop" && avatarPath) {
+      setBusy(true);
+      try {
+        setCropBlob(await getBlob(ref(storage, avatarPath)));
+      } finally {
+        setBusy(false);
+      }
+    }
   }
 
   if (loading || !user) {
@@ -287,7 +294,7 @@ export default function ProfilePage() {
             {["Take Photo", "Photo Library", "Edit Crop"].map((label) => (
               <button
                 key={label}
-                onClick={() => handleAvatarAction(label)}
+                onClick={() => void handleAvatarAction(label)}
                 className="block w-full border-t-[0.5px] border-[#2c2c2e] px-5 py-4 text-left text-[17px] font-semibold text-white transition-colors active:bg-[#28282a]"
               >
                 {label}
@@ -303,10 +310,10 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {cropSrc && (
+      {cropBlob && (
         <AvatarCropModal
-          src={cropSrc}
-          onCancel={() => setCropSrc(null)}
+          blob={cropBlob}
+          onCancel={() => setCropBlob(null)}
           onCropped={handleCropped}
         />
       )}
