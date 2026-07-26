@@ -22,8 +22,8 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
 - Node.js 20.9 or newer
 - A Firebase project with a Web app, Authentication, Firestore, and Storage
 - Firebase CLI access to that project
-- Application Default Credentials for server routes, or a service account
-  stored only in your hosting provider's secret manager
+- Application Default Credentials for server routes, Vercel OIDC federation,
+  or a service account stored only in your hosting provider's secret manager
 
 ## Local setup
 
@@ -94,6 +94,11 @@ Copy the variable names in [`.env.example`](.env.example) into the hosting
 platform's environment settings. Values prefixed with `NEXT_PUBLIC_` are
 Firebase client configuration and are intentionally public; server credentials,
 VAPID private keys, and cron secrets must remain protected.
+
+For Vercel, prefer its [Google Cloud OIDC
+integration](https://vercel.com/docs/oidc/gcp) and configure the four `GCP_*`
+variables in `.env.example`. This exchanges the deployment identity for
+short-lived Google credentials and avoids storing a Firebase private key.
 
 Administrator mutations require a recent Firebase sign-in and TOTP second
 factor by default. Keep `REQUIRE_ADMIN_MFA=true` in production. The scheduled

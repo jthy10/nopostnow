@@ -26,7 +26,8 @@ export async function requireMember(
   let decoded: DecodedIdToken;
   try {
     decoded = await getAdminAuth().verifyIdToken(token, true);
-  } catch {
+  } catch (error) {
+    console.error("Firebase ID token verification failed.", error);
     throw new ApiAuthError("unauthorized", 401);
   }
 
