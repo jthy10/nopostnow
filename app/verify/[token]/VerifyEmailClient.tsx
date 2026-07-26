@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { reload } from "firebase/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 
 type View = "ready" | "working" | "success" | "error";
@@ -13,6 +13,15 @@ export default function VerifyEmailClient({ token }: { token: string }) {
     "Confirm that this is the email you want to use with NoPostNow.",
   );
   const [destination, setDestination] = useState("/login");
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!redirecting) return;
+    const timer = window.setTimeout(() => {
+      window.location.replace("/feed");
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [redirecting]);
 
   async function confirmEmail() {
     setView("working");
@@ -42,6 +51,9 @@ export default function VerifyEmailClient({ token }: { token: string }) {
         throw new Error("We couldn't confirm this email. Please try again.");
       }
 
+      // Firebase restores browser persistence asynchronously. Waiting here
+      // avoids treating a still-hydrating signup session as signed out.
+      await auth.authStateReady();
       const account = auth.currentUser;
       if (account) {
         try {
@@ -49,6 +61,10 @@ export default function VerifyEmailClient({ token }: { token: string }) {
           if (account.emailVerified) {
             await account.getIdToken(true);
             setDestination("/feed");
+            setMessage("Your email is confirmed. Opening your feed...");
+            setView("success");
+            setRedirecting(true);
+            return;
           }
         } catch {
           // The server already confirmed the address. If this browser cannot
@@ -148,7 +164,11 @@ export default function VerifyEmailClient({ token }: { token: string }) {
               href={destination}
               className="mt-7 inline-block w-full rounded-xl bg-white px-5 py-4 text-sm font-extrabold text-black transition-opacity hover:opacity-90 active:opacity-75"
             >
-              {destination === "/feed" ? "Enter NoPostNow" : "Continue to log in"}
+              {redirecting
+                ? "Opening your feed..."
+                : destination === "/feed"
+                  ? "Enter NoPostNow"
+                  : "Continue to log in"}
             </Link>
           )}
           {view === "error" && (

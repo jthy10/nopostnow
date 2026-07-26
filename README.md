@@ -66,7 +66,18 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
    npm run firebase:deploy
    ```
 
-6. Start the app:
+6. Allow your app origins to fetch authenticated Storage blobs. Edit
+   `storage.cors.json` for your domains, then apply it with the Google Cloud
+   CLI:
+
+   ```bash
+   gcloud storage buckets update gs://YOUR_STORAGE_BUCKET --cors-file=storage.cors.json
+   ```
+
+   CORS does not make objects public; Firebase Storage rules and the member's
+   verified session still authorize every request.
+
+7. Start the app:
 
    ```bash
    npm run dev

@@ -13,6 +13,16 @@ import { displayVariantPath } from "./posts";
 const cache = new Map<string, string>();
 // Display variants that 404'd this session — don't re-request them per mount.
 const missingVariants = new Set<string>();
+const RETRY_DELAY_MS = 750;
+
+function isMissingObject(error: unknown) {
+  return (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "storage/object-not-found"
+  );
+}
 
 // With preferDisplay, tries the compressed photos/display/** copy first and
 // falls back to the untouched original (pre-backfill photos, tiny images).
@@ -40,15 +50,25 @@ export function useAuthedImage(path: string | null | undefined, preferDisplay = 
           if (!cancelled) setSrc(hit);
           return;
         }
-        try {
-          const blob = await getBlob(ref(storage, candidate));
-          if (cancelled) return;
-          const url = URL.createObjectURL(blob);
-          cache.set(candidate, url);
-          setSrc(url);
-          return;
-        } catch {
-          if (candidate !== path) missingVariants.add(candidate);
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            const blob = await getBlob(ref(storage, candidate));
+            if (cancelled) return;
+            const url = URL.createObjectURL(blob);
+            cache.set(candidate, url);
+            setSrc(url);
+            return;
+          } catch (error) {
+            if (isMissingObject(error)) {
+              if (candidate !== path) missingVariants.add(candidate);
+              break;
+            }
+            if (attempt === 0) {
+              await new Promise((resolve) =>
+                setTimeout(resolve, RETRY_DELAY_MS),
+              );
+            }
+          }
         }
       }
       if (!cancelled) setSrc(null);
