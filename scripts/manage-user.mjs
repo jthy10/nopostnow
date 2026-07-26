@@ -24,11 +24,12 @@ function adminApp() {
   return initializeApp({ projectId, credential });
 }
 
-async function setRole(user, { member, admin }) {
+async function setRole(user, { admin }) {
   const auth = getAuth(adminApp());
+  const claims = { ...(user.customClaims || {}) };
+  delete claims.member;
   await auth.setCustomUserClaims(user.uid, {
-    ...(user.customClaims || {}),
-    member,
+    ...claims,
     admin,
   });
 }
@@ -49,14 +50,14 @@ async function createUser() {
     displayName: username,
     emailVerified: true,
   });
-  await setRole(user, { member: true, admin });
+  await setRole(user, { admin });
   await getFirestore(adminApp()).doc(`users/${email}`).set({
     uid: user.uid,
     username,
     createdAt: FieldValue.serverTimestamp(),
     joinedAt: FieldValue.serverTimestamp(),
   });
-  console.log(`Created ${email} (${admin ? "admin" : "member"}).`);
+  console.log(`Created ${email} (${admin ? "administrator" : "member"}).`);
 }
 
 async function grantUser() {
@@ -65,7 +66,8 @@ async function grantUser() {
   const admin = process.env.USER_ADMIN === "true";
   const auth = getAuth(adminApp());
   const user = await auth.getUserByEmail(email);
-  await setRole(user, { member: true, admin });
+  await setRole(user, { admin });
+  await auth.updateUser(user.uid, { disabled: false, emailVerified: true });
   await getFirestore(adminApp())
     .doc(`users/${email}`)
     .set(
@@ -76,14 +78,14 @@ async function grantUser() {
       },
       { merge: true },
     );
-  console.log(`Granted ${email} ${admin ? "admin" : "member"} access.`);
+  console.log(`Enabled ${email}${admin ? " as an administrator" : ""}.`);
 }
 
 async function revokeUser() {
   const email = required("USER_EMAIL").toLowerCase();
   const auth = getAuth(adminApp());
   const user = await auth.getUserByEmail(email);
-  await setRole(user, { member: false, admin: false });
+  await setRole(user, { admin: false });
   await auth.updateUser(user.uid, { disabled: true });
   console.log(`Revoked and disabled ${email}.`);
 }

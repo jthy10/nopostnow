@@ -274,7 +274,7 @@ export default function UserProfilePage({
           onClose={() => setCapturedFile(null)}
           onPosted={() => {
             setCapturedFile(null);
-            router.push("/");
+            router.push("/feed");
           }}
         />
       )}

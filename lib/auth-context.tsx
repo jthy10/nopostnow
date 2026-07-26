@@ -5,16 +5,24 @@ import {
   useContext,
   useEffect,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, getDoc, setDoc, deleteDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { isStandalone } from "./push";
 import { findOrphanProfile } from "./settings";
 
 type AuthState = {
   user: User | null;
+  pendingUser: User | null;
   username: string | null;
   avatarPath: string | null;
   isAdmin: boolean;
@@ -25,6 +33,7 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState>({
   user: null,
+  pendingUser: null,
   username: null,
   avatarPath: null,
   isAdmin: false,
@@ -35,15 +44,17 @@ const AuthContext = createContext<AuthState>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (!u || !u.email) {
+    return onAuthStateChanged(auth, async (account) => {
+      if (!account?.email) {
+        setUser(null);
+        setPendingUser(null);
         setUsername(null);
         setAvatarPath(null);
         setIsAdmin(false);
@@ -51,70 +62,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const token = await u.getIdTokenResult();
-      if (token.claims.member !== true) {
+      // Account creation signs a user in before their verification message is
+      // sent. Keep that pending Firebase user available to the login page so it
+      // can send/resend the message, but never expose it to the protected app.
+      if (!account.emailVerified) {
+        setUser(null);
+        setPendingUser(account);
         setUsername(null);
         setAvatarPath(null);
         setIsAdmin(false);
         setLoading(false);
-        await signOut(auth);
         return;
       }
-      setIsAdmin(token.claims.admin === true);
 
-      const userRef = doc(db, "users", u.email);
-      const snap = await getDoc(userRef);
-      if (snap.exists()) {
-        setUsername(snap.data().username || "Anonymous");
-        setAvatarPath(snap.data().avatarPath ?? null);
-        // Self-heal: legacy user docs predate profiles and lack uid/joinedAt.
-        // Auth's creationTime is the real "date joined", but only the account
-        // owner can read it — so each user backfills their own doc on sign-in.
-        // appAt = first launch from the Home Screen; DMs use it to tell who
-        // actually has the app installed.
-        const inApp = isStandalone();
-        if (!snap.data().uid || !snap.data().joinedAt || (inApp && !snap.data().appAt)) {
-          const created = u.metadata.creationTime;
-          void setDoc(
-            userRef,
-            {
-              uid: u.uid,
+      setUser(account);
+      setPendingUser(null);
+
+      try {
+        const token = await account.getIdTokenResult();
+        setIsAdmin(token.claims.admin === true);
+
+        const userRef = doc(db, "users", account.email);
+        const publicRef = doc(db, "publicProfiles", account.uid);
+        const snapshot = await getDoc(userRef);
+        let profile: Record<string, unknown>;
+
+        if (snapshot.exists()) {
+          profile = snapshot.data();
+          // Self-heal account records that predate uid/joinedAt. appAt is the
+          // first launch from a Home Screen installation.
+          const inApp = isStandalone();
+          if (!profile.uid || !profile.joinedAt || (inApp && !profile.appAt)) {
+            const created = account.metadata.creationTime;
+            const repair = {
+              uid: account.uid,
               ...(created ? { joinedAt: Timestamp.fromDate(new Date(created)) } : {}),
-              ...(inApp && !snap.data().appAt ? { appAt: serverTimestamp() } : {}),
-            },
-            { merge: true }
-          );
-        }
-      } else {
-        // No doc under this email. Before starting fresh as Anonymous, check
-        // whether a profile keyed to an old email carries this uid — that's
-        // what a verified email change leaves behind. Adopt it.
-        const orphan = await findOrphanProfile(u.uid, u.email).catch(() => null);
-        if (orphan) {
-          await setDoc(userRef, orphan.data());
-          await deleteDoc(orphan.ref).catch(() => {});
-          setUsername(orphan.data().username || "Anonymous");
-          setAvatarPath(orphan.data().avatarPath ?? null);
+              ...(inApp && !profile.appAt ? { appAt: serverTimestamp() } : {}),
+            };
+            await setDoc(userRef, repair, { merge: true });
+            profile = { ...profile, ...repair };
+          }
         } else {
-          await setDoc(userRef, {
-            username: "Anonymous",
-            uid: u.uid,
-            ...(u.metadata.creationTime
-              ? { joinedAt: Timestamp.fromDate(new Date(u.metadata.creationTime)) }
-              : {}),
-            ...(isStandalone() ? { appAt: serverTimestamp() } : {}),
-            createdAt: serverTimestamp(),
-          });
-          setUsername("Anonymous");
+          // A verified email change can leave the private account record under
+          // the old address. Adopt it before creating a fresh profile.
+          const orphan = await findOrphanProfile(account.uid, account.email).catch(
+            () => null
+          );
+          if (orphan) {
+            profile = orphan.data();
+            await setDoc(userRef, profile);
+            await deleteDoc(orphan.ref).catch(() => {});
+          } else {
+            const joinedAt = account.metadata.creationTime
+              ? Timestamp.fromDate(new Date(account.metadata.creationTime))
+              : Timestamp.now();
+            profile = {
+              username: account.displayName?.trim() || "Anonymous",
+              uid: account.uid,
+              joinedAt,
+              ...(isStandalone() ? { appAt: serverTimestamp() } : {}),
+              createdAt: serverTimestamp(),
+            };
+            await setDoc(userRef, profile);
+          }
         }
+
+        const profileName =
+          typeof profile.username === "string" && profile.username.trim()
+            ? profile.username
+            : "Anonymous";
+        const profileAvatar =
+          typeof profile.avatarPath === "string" ? profile.avatarPath : null;
+
+        // Social discovery reads this UID-keyed, email-free projection. The
+        // email-keyed users record is private to its owner and administrators.
+        await setDoc(
+          publicRef,
+          {
+            uid: account.uid,
+            username: profileName,
+            ...(profileAvatar ? { avatarPath: profileAvatar } : {}),
+            ...(profile.joinedAt ? { joinedAt: profile.joinedAt } : {}),
+            ...(profile.appAt ? { appAt: profile.appAt } : {}),
+          },
+          { merge: true }
+        );
+
+        setUsername(profileName);
+        setAvatarPath(profileAvatar);
+      } catch (error) {
+        console.error("Failed to load the signed-in profile.", error);
+        setUsername(null);
+        setAvatarPath(null);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, username, avatarPath, isAdmin, loading, setAvatarPath, setUsername }}
+      value={{
+        user,
+        pendingUser,
+        username,
+        avatarPath,
+        isAdmin,
+        loading,
+        setAvatarPath,
+        setUsername,
+      }}
     >
       {children}
     </AuthContext.Provider>

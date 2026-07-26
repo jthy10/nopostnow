@@ -13,10 +13,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nopostnow.com"),
   title: "NoPostNow",
-  description: "A private photo feed for trusted circles",
+  description: "A chronological photo feed without ads or algorithms",
   openGraph: {
     title: "NoPostNow",
-    description: "A private photo feed. No algorithm, no ads, no randoms.",
+    description: "A chronological photo feed. No algorithm and no ads.",
     url: "/",
     siteName: "NoPostNow",
     type: "website",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "NoPostNow",
-    description: "A private photo feed. No algorithm, no ads, no randoms.",
+    description: "A chronological photo feed. No algorithm and no ads.",
   },
   appleWebApp: {
     capable: true,

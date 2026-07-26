@@ -4,8 +4,7 @@ service cloud.firestore {
 
     function signedIn() {
       return request.auth != null
-             && request.auth.token.email_verified == true
-             && request.auth.token.member == true;
+             && request.auth.token.email_verified == true;
     }
 
     function isAdmin() {
@@ -45,7 +44,10 @@ service cloud.firestore {
     // uid backs the /u/[uid] profile pages — nobody may claim another's uid,
     // and only the admin can set or clear the muted flag.
     match /users/{email} {
-      allow read: if signedIn();
+      allow read: if (signedIn()
+                      && (request.auth.token.email == email
+                          || resource.data.uid == request.auth.uid))
+                  || isAdmin();
       allow create, update: if (signedIn()
                        && validUserProfile(email)
                        && (!request.resource.data.keys().hasAny(['muted'])
@@ -56,6 +58,35 @@ service cloud.firestore {
       // (the token's email no longer matches it) — the owner may clean up
       // their own orphan, proven by the uid stored inside it.
       allow delete: if (signedIn() && resource.data.uid == request.auth.uid)
+                    || freshAdmin();
+    }
+
+    function validPublicProfile(uid) {
+      return request.resource.data.keys().hasOnly(
+               ['username', 'avatarPath', 'uid', 'joinedAt', 'appAt'])
+             && request.resource.data.username is string
+             && request.resource.data.username.size() >= 2
+             && request.resource.data.username.size() <= 24
+             && request.resource.data.uid == request.auth.uid
+             && request.resource.data.uid == uid
+             && request.resource.data.get('avatarPath', '') is string
+             && request.resource.data.get('avatarPath', '').size() <= 500
+             && (request.resource.data.get('avatarPath', '') == ''
+                 || request.resource.data.get('avatarPath', '').matches(
+                      'avatars/' + request.auth.uid + '/.*'))
+             && request.resource.data.get('joinedAt', request.time) is timestamp
+             && request.resource.data.get('appAt', request.time) is timestamp;
+    }
+
+    // Email-free projection used by search, avatars, profiles, mentions, and
+    // direct messages. A member can edit only their own UID-keyed document.
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if (signedIn()
+                                && request.auth.uid == uid
+                                && validPublicProfile(uid))
+                            || freshAdmin();
+      allow delete: if (signedIn() && request.auth.uid == uid)
                     || freshAdmin();
     }
 

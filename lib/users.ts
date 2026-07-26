@@ -16,12 +16,12 @@ export type UserMeta = {
   lastActiveAt?: Date | null;
 };
 
-// One fetch of the (small) users collection per session, shared by every
+// One fetch of the email-free public profile collection per session, shared by every
 // avatar in the feed, comment sheets, and profile pages.
 let mapPromise: Promise<UserMeta[]> | null = null;
 
 function allUsers(): Promise<UserMeta[]> {
-  mapPromise ??= getDocs(collection(db, "users")).then((snap) => {
+  mapPromise ??= getDocs(collection(db, "publicProfiles")).then((snap) => {
     const list: UserMeta[] = [];
     snap.forEach((d) => {
       const { username, avatarPath, uid, joinedAt, appAt } = d.data();

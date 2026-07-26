@@ -26,7 +26,7 @@ export default function BottomNav({
     <nav className="pwa-bottom-nav relative z-40 shrink-0 border-t-[0.5px] border-line bg-panel pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-[46px] items-center justify-around px-5">
         <Link
-          href="/"
+          href="/feed"
           onClick={(e) => {
             // Already on the feed: jump back to the top instead of re-navigating.
             if (pathname === "/") {

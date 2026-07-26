@@ -4,8 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "NoPostNow",
     short_name: "NoPostNow",
-    description: "Private photo feed for trusted circles",
-    start_url: "/",
+    description: "A chronological, members-only photo feed",
+    start_url: "/feed",
     display: "standalone",
     // Locks Android PWAs to portrait. iOS ignores this — OrientationLock
     // covers it with a rotate-back overlay instead.

@@ -1166,7 +1166,18 @@ export default function AdminPage() {
       return;
     }
     try {
-      await setDoc(doc(db, "users", u.email), { username: next }, { merge: true });
+      await Promise.all([
+        setDoc(doc(db, "users", u.email), { username: next }, { merge: true }),
+        ...(u.uid
+          ? [
+              setDoc(
+                doc(db, "publicProfiles", u.uid),
+                { uid: u.uid, username: next },
+                { merge: true }
+              ),
+            ]
+          : []),
+      ]);
       // Restamp their old posts and comments (matched by uid when the doc
       // has one, else by the old username — pre-self-heal accounts).
       const myPost = (p: P) => (u.uid ? p.userUUID === u.uid : p.username === u.username);

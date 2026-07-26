@@ -1,16 +1,16 @@
 import { Suspense } from "react";
-import LoginClient from "./LoginClient";
+import AuthActionClient from "./AuthActionClient";
 
-export default function LoginPage() {
+export default function AuthActionPage() {
   return (
     <Suspense
       fallback={
         <main className="flex min-h-dvh items-center justify-center text-sm text-meta">
-          Loading account access...
+          Checking secure link...
         </main>
       }
     >
-      <LoginClient />
+      <AuthActionClient />
     </Suspense>
   );
 }
