@@ -29,7 +29,7 @@ export default function BottomNav({
           href="/feed"
           onClick={(e) => {
             // Already on the feed: jump back to the top instead of re-navigating.
-            if (pathname === "/") {
+            if (pathname === "/feed") {
               e.preventDefault();
               const scroller = scrollRef?.current;
               if (scroller) scroller.scrollTo({ top: 0, behavior: "smooth" });
@@ -37,7 +37,7 @@ export default function BottomNav({
             }
           }}
           className={`flex h-full min-w-16 flex-col items-center justify-center gap-0.5 transition-opacity ${
-            pathname === "/" ? "opacity-100" : "opacity-40"
+            pathname === "/feed" ? "opacity-100" : "opacity-40"
           }`}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" {...icon}>

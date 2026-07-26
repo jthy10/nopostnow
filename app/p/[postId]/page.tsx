@@ -72,7 +72,7 @@ export default function PostPage({
   return (
     <>
       <ViewportShell>
-      <PageHeader backHref="/" title="Post" />
+      <PageHeader backHref="/feed" title="Post" />
 
       <main className="mx-auto min-h-0 w-full max-w-lg flex-1 overflow-y-auto overscroll-contain pt-[calc(52px+env(safe-area-inset-top))]">
         {post === undefined && (
