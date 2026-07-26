@@ -31,7 +31,7 @@ export async function requireMember(
     throw new ApiAuthError("unauthorized", 401);
   }
 
-  if (decoded.member !== true || decoded.email_verified !== true) {
+  if (decoded.email_verified !== true) {
     throw new ApiAuthError("forbidden", 403);
   }
   if (options.admin && decoded.admin !== true) {

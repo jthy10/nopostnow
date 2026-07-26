@@ -81,7 +81,14 @@ export default function ProfilePage() {
     try {
       const path = `avatars/${user.uid}/${Date.now()}-avatar.jpg`;
       await uploadBytes(ref(storage, path), blob, { contentType: "image/jpeg" });
-      await setDoc(doc(db, "users", user.email!), { avatarPath: path }, { merge: true });
+      await Promise.all([
+        setDoc(doc(db, "users", user.email!), { avatarPath: path }, { merge: true }),
+        setDoc(
+          doc(db, "publicProfiles", user.uid),
+          { uid: user.uid, avatarPath: path },
+          { merge: true }
+        ),
+      ]);
       setAvatarPath(path);
       invalidateAvatarMap();
     } finally {
@@ -277,7 +284,7 @@ export default function ProfilePage() {
           onClose={() => setCapturedFile(null)}
           onPosted={() => {
             setCapturedFile(null);
-            router.push("/");
+            router.push("/feed");
           }}
         />
       )}

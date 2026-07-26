@@ -28,17 +28,17 @@ import { invalidateAvatarMap } from "./users";
 import { invalidateFeedCache } from "./feed-cache";
 
 export const MAX_USERNAME_LENGTH = 24;
-export const MIN_PASSWORD_LENGTH = 6;
+export const MIN_PASSWORD_LENGTH = 12;
 export const MAX_FEEDBACK_LENGTH = 2000;
 
 // Display names double as usernames, so they must be unique. Firestore can't
 // enforce that in rules — the check is client-side, which is fine for a
 // friend group (no adversarial racing over "Sal").
-export async function isUsernameTaken(name: string, myEmail: string) {
-  const users = await getDocs(collection(db, "users"));
+export async function isUsernameTaken(name: string, myUid: string) {
+  const users = await getDocs(collection(db, "publicProfiles"));
   const needle = name.trim().toLowerCase();
   return users.docs.some(
-    (d) => d.id !== myEmail && (d.data().username ?? "").toLowerCase() === needle
+    (d) => d.id !== myUid && (d.data().username ?? "").toLowerCase() === needle
   );
 }
 
@@ -64,6 +64,11 @@ export async function renameUser(opts: {
 }) {
   const newName = opts.newName.trim();
   await setDoc(doc(db, "users", opts.email), { username: newName }, { merge: true });
+  await setDoc(
+    doc(db, "publicProfiles", opts.uid),
+    { uid: opts.uid, username: newName },
+    { merge: true }
+  );
   await Promise.allSettled([
     propagateUsername(opts.uid, newName),
     propagateDmNames(opts.uid, newName),
@@ -210,6 +215,7 @@ export async function deleteMyAccount(user: User, currentPassword: string) {
     deleteDoc(doc(db, "blocks", uid)),
     deleteDoc(doc(db, "unique_users", uid)),
     deleteDoc(doc(db, "users", email)),
+    deleteDoc(doc(db, "publicProfiles", uid)),
   ]);
 
   invalidateAvatarMap();

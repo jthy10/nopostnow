@@ -324,7 +324,7 @@ export default function SettingsPage() {
     setNameBusy(true);
     setNameMsg(null);
     try {
-      if (await isUsernameTaken(next, user.email)) {
+      if (await isUsernameTaken(next, user.uid)) {
         setNameMsg({ ok: false, text: `“${next}” is already taken.` });
         return;
       }

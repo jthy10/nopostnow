@@ -3,8 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function isMember() {
       return request.auth != null
-             && request.auth.token.email_verified == true
-             && request.auth.token.member == true;
+             && request.auth.token.email_verified == true;
     }
 
     function isAdmin() {

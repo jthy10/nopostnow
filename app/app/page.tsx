@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 const stats = [
   { label: "RATING", value: "5.0", caption: "★★★★★" },
   { label: "AGE", value: "18+", caption: "Adults Only" },
-  { label: "MODEL", value: "Private", caption: "Trusted circles" },
+  { label: "ACCESS", value: "Members", caption: "Verified accounts" },
   { label: "PRICE", value: "Free", caption: "Forever" },
 ];
 
@@ -258,8 +258,8 @@ export default function AppStorePage() {
           About this app
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-body">
-          NoPostNow is a private photo feed. No algorithm, no ads, no randoms —
-          just the people you actually know, posting photos you actually want to see.
+          NoPostNow is a members-only photo feed. No algorithm, no ads, and no
+          suggested posts—just photos from the people in the community.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-body">
           The app is the full experience: it lives on your Home Screen like any other app, opens

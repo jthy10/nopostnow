@@ -288,7 +288,7 @@ export default function NotificationsPage() {
           onClose={() => setCapturedFile(null)}
           onPosted={() => {
             setCapturedFile(null);
-            router.push("/");
+            router.push("/feed");
           }}
         />
       )}
