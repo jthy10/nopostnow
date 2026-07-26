@@ -69,6 +69,10 @@ const values = {
   DAILY_PROMPT_TIME: current.DAILY_PROMPT_TIME || "19:00",
   DAILY_PROMPT_TIME_ZONE: current.DAILY_PROMPT_TIME_ZONE || "America/New_York",
   REQUIRE_ADMIN_MFA: current.REQUIRE_ADMIN_MFA || "true",
+  APP_ORIGIN: current.APP_ORIGIN || origin,
+  RESEND_API_KEY: current.RESEND_API_KEY || "",
+  AUTH_EMAIL_FROM:
+    current.AUTH_EMAIL_FROM || `NoPostNow <verify@auth.${new URL(origin).hostname}>`,
 };
 
 writeFileSync(

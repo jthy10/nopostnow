@@ -82,6 +82,36 @@ function authActionSettings() {
   return { url: `${window.location.origin}/login` };
 }
 
+async function sendVerification(account: User) {
+  const idToken = await account.getIdToken();
+  const response = await fetch("/api/auth/send-verification", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  if (response.ok) {
+    const result = (await response.json()) as {
+      sent?: boolean;
+      verified?: boolean;
+    };
+    return result.verified ? "verified" : "branded";
+  }
+
+  if (response.status === 429) {
+    throw new Error("Wait a minute before requesting another verification email.");
+  }
+
+  // Self-hosters can omit the optional transactional provider. Firebase's
+  // built-in message remains a functional fallback if that provider is absent
+  // or temporarily unavailable.
+  if (response.status === 503 || response.status >= 500) {
+    await sendEmailVerification(account, authActionSettings());
+    return "backup";
+  }
+
+  throw new Error("We couldn't send a verification email. Please try again.");
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,8 +191,18 @@ export default function LoginPage() {
         await updateProfile(credential.user, { displayName: name.trim() });
         setEmail(normalizedEmail);
         setMode("verify");
-        await sendEmailVerification(credential.user, authActionSettings());
-        setInfo(`We sent a verification link to ${normalizedEmail}.`);
+        const delivery = await sendVerification(credential.user);
+        if (delivery === "verified") {
+          await reload(credential.user);
+          await credential.user.getIdToken(true);
+          router.replace("/feed");
+          return;
+        }
+        setInfo(
+          delivery === "branded"
+            ? `A NoPostNow confirmation email is on its way to ${normalizedEmail}.`
+            : `We sent a backup verification link to ${normalizedEmail}.`,
+        );
       } else if (mode === "reset") {
         await sendPasswordResetEmail(auth, normalizedEmail, authActionSettings());
         setInfo(
@@ -217,8 +257,18 @@ export default function LoginPage() {
     setError(null);
     setInfo(null);
     try {
-      await sendEmailVerification(account, authActionSettings());
-      setInfo(`A new verification link was sent to ${account.email}.`);
+      const delivery = await sendVerification(account);
+      if (delivery === "verified") {
+        await reload(account);
+        await account.getIdToken(true);
+        window.location.replace("/feed");
+        return;
+      }
+      setInfo(
+        delivery === "branded"
+          ? `A fresh NoPostNow confirmation email is on its way to ${account.email}.`
+          : `We sent a backup verification link to ${account.email}.`,
+      );
     } catch (error) {
       setError(friendlyError(error));
     } finally {

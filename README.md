@@ -15,6 +15,7 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
 - Administrator tools protected by Firebase custom claims and recent MFA
 - Strict Firestore and Storage rules with owner- and role-based access
 - Server-verified notification endpoints that do not trust client identities
+- Branded, scanner-safe email confirmation through an authenticated sender
 - Responsive, mobile-first interface
 
 ## Requirements
@@ -22,6 +23,7 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
 - Node.js 20.9 or newer
 - A Firebase project with a Web app, Authentication, Firestore, and Storage
 - Firebase CLI access to that project
+- A transactional email provider for branded verification messages
 - Application Default Credentials for server routes, Vercel OIDC federation,
   or a service account stored only in your hosting provider's secret manager
 
@@ -70,12 +72,21 @@ built with Next.js, React, and Firebase and is designed to be self-hosted.
    npm run dev
    ```
 
+For branded verification email, verify a dedicated sending subdomain such as
+`auth.example.com` with Resend, publish the provider's SPF and DKIM records plus
+a DMARC policy, and set `APP_ORIGIN`, `RESEND_API_KEY`, and `AUTH_EMAIL_FROM`.
+Keep open and click tracking disabled for authentication email. If these
+variables are absent, the app falls back to Firebase's standard verification
+message so users are not stranded.
+
 ## Account and administrator management
 
 Public users register with email and password in the app. They must verify their
 email before Firestore, Storage, the feed, or authenticated API routes will
-accept their session. Password reset and verification links are handled by the
-branded `/auth/action` route.
+accept their session. Branded verification messages link to a short
+`/verify/{token}` page that requires an explicit confirmation click, preventing
+mail scanners from consuming one-time actions. Password reset and legacy
+Firebase actions remain handled by the branded `/auth/action` route.
 
 The command below is only for bootstrapping an administrator from a trusted
 environment with Firebase Admin credentials:

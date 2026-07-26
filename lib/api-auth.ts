@@ -16,20 +16,23 @@ function bearerToken(req: Request) {
   return (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
 }
 
-export async function requireMember(
-  req: Request,
-  options: { admin?: boolean; freshSeconds?: number; requireMfa?: boolean } = {},
-): Promise<DecodedIdToken> {
+export async function requireFirebaseUser(req: Request): Promise<DecodedIdToken> {
   const token = bearerToken(req);
   if (!token) throw new ApiAuthError("unauthorized", 401);
 
-  let decoded: DecodedIdToken;
   try {
-    decoded = await getAdminAuth().verifyIdToken(token, true);
+    return await getAdminAuth().verifyIdToken(token, true);
   } catch (error) {
     console.error("Firebase ID token verification failed.", error);
     throw new ApiAuthError("unauthorized", 401);
   }
+}
+
+export async function requireMember(
+  req: Request,
+  options: { admin?: boolean; freshSeconds?: number; requireMfa?: boolean } = {},
+): Promise<DecodedIdToken> {
+  const decoded = await requireFirebaseUser(req);
 
   if (decoded.email_verified !== true) {
     throw new ApiAuthError("forbidden", 403);

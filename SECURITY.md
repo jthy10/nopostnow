@@ -27,6 +27,7 @@ shared in an issue:
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
 - `VAPID_PRIVATE_KEY`
 - `CRON_SECRET`
+- Transactional email API keys such as `RESEND_API_KEY`
 - User passwords, session cookies, and Firebase ID or refresh tokens
 
 If a secret is exposed, revoke or rotate it immediately; deleting it from the
@@ -42,3 +43,5 @@ Production operators should:
 - Enable Firebase App Check where supported by their deployment.
 - Enable GitHub secret scanning, push protection, Dependabot, and CodeQL.
 - Review Firebase Authentication, IAM, billing, and audit logs regularly.
+- Authenticate transactional email with SPF, DKIM, and DMARC, and keep
+  verification-email open and click tracking disabled.
