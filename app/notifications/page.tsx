@@ -141,7 +141,7 @@ export default function NotificationsPage() {
     <>
       <ViewportShell>
       <PageHeader
-        backHref="/"
+        backHref="/feed"
         title="Notifications"
         right={
           <>

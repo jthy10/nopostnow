@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     if (!message) {
       return Response.json({ error: "empty message" }, { status: 400 });
     }
-    const url = body.url && /^\/[^\s]*$/.test(body.url) ? body.url : "/";
+    const url = body.url && /^\/[^\s]*$/.test(body.url) ? body.url : "/feed";
 
     const result = await sendPush({
       targetUids: body.test ? [actor.uid] : undefined,

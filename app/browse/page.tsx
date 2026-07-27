@@ -134,7 +134,7 @@ export default function BrowsePage() {
     <>
       <ViewportShell>
         <PageHeader
-          backHref="/"
+          backHref="/feed"
           title="Browse"
           right={
             <button

@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     payload: {
       title: "NoPostNow",
       body: MESSAGES[now.dayNumber % MESSAGES.length],
-      url: "/",
+      url: "/feed",
       tag: "daily-prompt",
     },
   });

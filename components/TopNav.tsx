@@ -47,7 +47,7 @@ export default function TopNav({
             href="/feed"
             aria-label="Go to feed"
             onClick={() => {
-              if (pathname !== "/") return;
+              if (pathname !== "/feed") return;
               const scroller = scrollRef?.current;
               if (scroller) scroller.scrollTo({ top: 0, behavior: "smooth" });
               else window.scrollTo({ top: 0, behavior: "smooth" });
